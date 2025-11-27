@@ -18,7 +18,7 @@ main()
 
   # set configuration option variables
   show_battery=$(get_tmux_option "@nightowl-show-battery" true)
-  show_network=$(get_tmux_option "@nightowl-show-network" true)
+  show_network=$(get_tmux_option "@nightowl-show-network" false)
   show_weather=$(get_tmux_option "@nightowl-show-weather" true)
   show_fahrenheit=$(get_tmux_option "@nightowl-show-fahrenheit" true)
   show_powerline=$(get_tmux_option "@nightowl-show-powerline" false)

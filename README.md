@@ -43,6 +43,12 @@ Disable weather functionality:
 set -g @nightowl-show-weather false
 ```
 
+Set cache duration to 30 minutes (1800 seconds)
+
+```shell
+set -g @nightowl-weather-cache-duration 1800
+```
+
 Switch from default fahrenheit to celsius:
 
 ```shell

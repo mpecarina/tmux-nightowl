@@ -31,6 +31,7 @@ main()
   show_cpu_usage=$(get_tmux_option "@nightowl-cpu-usage" false)
   show_ram_usage=$(get_tmux_option "@nightowl-ram-usage" false)
   show_gpu_usage=$(get_tmux_option "@nightowl-gpu-usage" false)
+  weather_cache_duration=$(get_tmux_option "@nightowl-weather-cache-duration" 1800)
 
 
   # Night Owl Color Pallette
@@ -71,7 +72,7 @@ main()
 
   # start weather script in background
   if $show_weather; then
-    $current_dir/sleep_weather.sh $show_fahrenheit &
+    $current_dir/sleep_weather.sh $show_fahrenheit $weather_cache_duration &
   fi
 
   # Set timezone unless hidden by configuration

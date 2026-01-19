@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
-
-
 fahrenheit=$1
+CACHE_DIR="$HOME/.config/tmux-nightowl"
+CACHE_FILE="$CACHE_DIR/weather_cache"
+CACHE_DURATION=${2:-1800} 
 
-load_request_params()
-{
-	
+mkdir -p "$CACHE_DIR"
+
+is_cache_valid() {
+	if [ -f "$CACHE_FILE" ]; then
+		local current_time=$(date +%s)
+		local file_mod_time=$(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null)
+		local time_diff=$((current_time - file_mod_time))
+		
+		if [ $time_diff -lt $CACHE_DURATION ]; then
+			return 0  # Cache is valid
+		fi
+	fi
+	return 1 
+}
+
+load_request_params() {
 	city=$(curl -s https://ipinfo.io/city 2> /dev/null)
 	region=$(curl -s https://ipinfo.io/region 2> /dev/null)
 	zip=$(curl -s https://ipinfo.io/postal 2> /dev/null | tail -1)
@@ -17,27 +31,24 @@ load_request_params()
 	weather_url=https://forecast.weather.gov/zipcity.php
 }
 
-#substitute region code for regions in north america
-get_region_code()
-{
+get_region_code() {
 	curl -s $region_code_url | grep $region &> /dev/null && region=$(curl -s $region_code_url | grep $region | cut -d ',' -f 2)
 	echo $region
 }
 
-weather_information()
-{
+weather_information() {
 	curl -sL $weather_url?inputstring=$zip | grep myforecast-current | grep -Eo '>.*<' | sed -E 's/>(.*)</\1/'
 }
-get_temp()
-{
+
+get_temp() {
 	if $fahrenheit; then
 		echo $(weather_information | grep 'deg;F' | cut -d '&' -f 1)
 	else
 		echo $(( ($(weather_information | grep 'deg;F' | cut -d '&' -f 1) - 32) * 5 / 9 ))
 	fi
 }
-forecast_unicode() 
-{
+
+forecast_unicode() {
 	forecast=$(weather_information | head -n 1)
 
 	if [[ $forecast =~ 'Snow' ]]; then
@@ -51,12 +62,9 @@ forecast_unicode()
 	else
 		echo '☀ '
 	fi
-	
-
 }
-#get weather display if in US
-display_weather()
-{
+
+display_weather() {
 	if [ $country = 'US' ]; then
 		echo "$(forecast_unicode)$(get_temp)° "
 	else
@@ -64,22 +72,29 @@ display_weather()
 	fi
 }
 
-main()
-{
-	# don't run the rest of the script unless we can safely get all the information
+fetch_and_cache() {
 	load_request_params
 
 	if [[ $exit_code -eq 429 ]]; then
 		echo "Request Limit Reached"
 		exit
 	fi
-	# process should be cancelled when session is killed
+	
 	if ping -q -c 1 -W 1 ipinfo.io &>/dev/null; then
-		echo "$(display_weather)$city, $(get_region_code)"
+		local result="$(display_weather)$city, $(get_region_code)"
+		echo "$result" > "$CACHE_FILE"
+		echo "$result"
 	else
 		echo "Location Unavailable"
 	fi
 }
 
-#run main driver program
+main() {
+	if is_cache_valid; then
+		cat "$CACHE_FILE"
+	else
+		fetch_and_cache
+	fi
+}
+
 main

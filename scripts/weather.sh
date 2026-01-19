@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
+
 fahrenheit=$1
+CACHE_DURATION=${2:-1800}
 CACHE_DIR="$HOME/.config/tmux-nightowl"
 CACHE_FILE="$CACHE_DIR/weather_cache"
-CACHE_DURATION=${2:-1800} 
 
 mkdir -p "$CACHE_DIR"
 
-is_cache_valid() {
+is_cache_valid()
+{
 	if [ -f "$CACHE_FILE" ]; then
 		local current_time=$(date +%s)
 		local file_mod_time=$(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null)
 		local time_diff=$((current_time - file_mod_time))
 		
 		if [ $time_diff -lt $CACHE_DURATION ]; then
-			return 0  # Cache is valid
+			return 0
 		fi
 	fi
-	return 1 
+	return 1
 }
 
-load_request_params() {
+load_request_params()
+{
 	city=$(curl -s https://ipinfo.io/city 2> /dev/null)
 	region=$(curl -s https://ipinfo.io/region 2> /dev/null)
 	zip=$(curl -s https://ipinfo.io/postal 2> /dev/null | tail -1)
@@ -31,16 +34,19 @@ load_request_params() {
 	weather_url=https://forecast.weather.gov/zipcity.php
 }
 
-get_region_code() {
+get_region_code()
+{
 	curl -s $region_code_url | grep $region &> /dev/null && region=$(curl -s $region_code_url | grep $region | cut -d ',' -f 2)
 	echo $region
 }
 
-weather_information() {
+weather_information()
+{
 	curl -sL $weather_url?inputstring=$zip | grep myforecast-current | grep -Eo '>.*<' | sed -E 's/>(.*)</\1/'
 }
 
-get_temp() {
+get_temp()
+{
 	if $fahrenheit; then
 		echo $(weather_information | grep 'deg;F' | cut -d '&' -f 1)
 	else
@@ -48,7 +54,8 @@ get_temp() {
 	fi
 }
 
-forecast_unicode() {
+forecast_unicode() 
+{
 	forecast=$(weather_information | head -n 1)
 
 	if [[ $forecast =~ 'Snow' ]]; then
@@ -64,7 +71,8 @@ forecast_unicode() {
 	fi
 }
 
-display_weather() {
+display_weather()
+{
 	if [ $country = 'US' ]; then
 		echo "$(forecast_unicode)$(get_temp)° "
 	else
@@ -72,7 +80,8 @@ display_weather() {
 	fi
 }
 
-fetch_and_cache() {
+fetch_and_cache()
+{
 	load_request_params
 
 	if [[ $exit_code -eq 429 ]]; then
@@ -89,7 +98,8 @@ fetch_and_cache() {
 	fi
 }
 
-main() {
+main()
+{
 	if is_cache_valid; then
 		cat "$CACHE_FILE"
 	else

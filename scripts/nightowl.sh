@@ -178,8 +178,8 @@ main()
         tmux set-option -ga status-right "#[fg=${dark_gray},bg=${cyan}] #($current_dir/network.sh) "
       fi
 
-      if $show_weather; then # weather
-          tmux set-option -ga status-right "#[fg=${dark_gray},bg=${blue}] #(cat $current_dir/../data/weather.txt) "
+      if $show_weather; then
+          tmux set-option -ga status-right "#[fg=${dark_gray},bg=${blue}] #(cat ~/.config/tmux-nightowl/weather_cache) "
       fi
 
       if $show_military; then # military time

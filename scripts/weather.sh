@@ -12,13 +12,18 @@ get_tmux_option() {
 	fi
 }
 
-# Location overrides (to bypass IP-based geolocation, e.g. when using a proxy)
+# Weather location overrides (proxy/VPN friendly)
+#
+# If @nightowl-weather-zip is set, this script will NOT call ipinfo.io at all.
+# You can also set a label explicitly to avoid any geolocation-derived text.
+#
 # Examples:
-#   set -g @nightowl-weather-zip "10001"
+#   set -g @nightowl-weather-zip "55987"
 #   set -g @nightowl-weather-country "US"
-# If zip is set, it will be used for the NOAA request instead of ipinfo.io.
+#   set -g @nightowl-weather-label "Rochester, MN"
 nightowl_weather_zip_override=$(get_tmux_option "@nightowl-weather-zip" "")
 nightowl_weather_country_override=$(get_tmux_option "@nightowl-weather-country" "")
+nightowl_weather_label_override=$(get_tmux_option "@nightowl-weather-label" "")
 
 fahrenheit=$1
 CACHE_DURATION=${2:-1800}
@@ -43,7 +48,30 @@ is_cache_valid()
 
 load_request_params()
 {
-	# Defaults from IP-based location
+	region_code_url=http://www.ip2country.net/ip2country/region_code.html
+	weather_url=https://forecast.weather.gov/zipcity.php
+
+	# If ZIP override is set, skip IP-based geolocation entirely.
+	if [ -n "$nightowl_weather_zip_override" ]; then
+		zip="$nightowl_weather_zip_override"
+
+		# Country must be US for NOAA output. Default to US in override mode,
+		# but allow explicit override.
+		country="US"
+		exit_code="200"
+
+		if [ -n "$nightowl_weather_country_override" ]; then
+			country="$nightowl_weather_country_override"
+		fi
+
+		# Optional label override. If unset, omit the location label to avoid
+		# incorrect proxy-derived city/region text.
+		city=""
+		region=""
+		return 0
+	fi
+
+	# Default behavior: IP-based location
 	city=$(curl -s https://ipinfo.io/city 2> /dev/null)
 	region=$(curl -s https://ipinfo.io/region 2> /dev/null)
 	zip=$(curl -s https://ipinfo.io/postal 2> /dev/null | tail -1)
@@ -51,17 +79,9 @@ load_request_params()
 	country=`grep -Eo [a-zA-Z]+ <<< "$country_w_code"`
 	exit_code=`grep -Eo [0-9]{3} <<< "$country_w_code"`
 
-	# Overrides to bypass IP-based geolocation
-	if [ -n "$nightowl_weather_zip_override" ]; then
-		zip="$nightowl_weather_zip_override"
-	fi
-
 	if [ -n "$nightowl_weather_country_override" ]; then
 		country="$nightowl_weather_country_override"
 	fi
-
-	region_code_url=http://www.ip2country.net/ip2country/region_code.html
-	weather_url=https://forecast.weather.gov/zipcity.php
 }
 
 get_region_code()
@@ -119,8 +139,34 @@ fetch_and_cache()
 		exit
 	fi
 
+	# If ZIP override is set, do not depend on ipinfo.io connectivity at all.
+	if [ -n "$nightowl_weather_zip_override" ]; then
+		local label=""
+		if [ -n "$nightowl_weather_label_override" ]; then
+			label="$nightowl_weather_label_override"
+		fi
+
+		local result
+		if [ -n "$label" ]; then
+			result="$(display_weather)${label}"
+		else
+			result="$(display_weather)"
+		fi
+
+		echo "$result" > "$CACHE_FILE"
+		echo "$result"
+		return 0
+	fi
+
 	if ping -q -c 1 -W 1 ipinfo.io &>/dev/null; then
-		local result="$(display_weather)$city, $(get_region_code)"
+		local label=""
+		if [ -n "$nightowl_weather_label_override" ]; then
+			label="$nightowl_weather_label_override"
+		else
+			label="$city, $(get_region_code)"
+		fi
+
+		local result="$(display_weather)${label}"
 		echo "$result" > "$CACHE_FILE"
 		echo "$result"
 	else

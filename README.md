@@ -1,325 +1,326 @@
-# Night Owl for [tmux](https://github.com/tmux/tmux/wiki)
+# dotfiles
 
-> A dark theme for [tmux](https://github.com/tmux/tmux/wiki) using the beautiful [Night Owl colorscheme originally created by @sdras](https://github.com/sdras/night-owl-vscode-theme)
+This repo is designed to bootstrap a new **Ubuntu** machine (and optionally macOS later) with your preferred:
 
-## Screenshot
+- `zsh` configuration
+- `tmux` configuration + `tpm` (tmux plugin manager)
+- `neovim` configuration (lazy.nvim bootstrap + plugin install)
+- common CLI dependencies used by the above
 
+It follows a **backup + symlink** model:
 
+- existing config files are moved into a timestamped backup directory
+- this repo’s files are symlinked into the expected locations in `$HOME`
 
-## Install
+---
 
-Install using tpm. If you are a tpm user, you can install the theme and keep up to date by adding the following to your `.tmux.conf`:
+## Repo layout
 
-```/dev/null/tmux.conf#L1-1
-set -g @plugin 'kylepeeler/tmux-nightowl'
-```
+- `config/zsh/zshrc` → symlinked to `~/.zshrc`
+- `config/tmux/tmux.conf` → symlinked to `~/.tmux.conf`
+- `config/nvim/init.lua` → symlinked to `~/.config/nvim/init.lua`
 
-## Activating theme
+Bootstrap / install helpers:
 
-1. Make sure `run -b '~/.tmux/plugins/tpm/tpm'` is at the bottom of your `.tmux.conf`
-2. Run tmux
-3. Use the tpm install command: prefix + I (default prefix is ctrl+b)
+---
 
-## Theme selection
+## Starship prompt config + themes (symlink strategy)
 
-Built-in themes:
+Your setup uses:
 
-- `nightowl` (default)
-- `shaman` (pairs well with the iTerm2 “Shaman” scheme)
+- A **single active config** at `~/.config/starship.toml`
+- A **themes directory** at `~/.config/starship/` containing variants (e.g. `starship-nightowl.toml`, `starship-catpuccin.toml`, etc.)
+- A **symlink** so you can switch themes by repointing `~/.config/starship.toml` to one of the theme files.
 
-Select a theme via `@nightowl-theme`:
+### Recommended layout
 
-```/dev/null/tmux.conf#L1-4
-# default
-set -g @nightowl-theme "nightowl"
+On the machine:
 
-# Shaman-complement preset
-set -g @nightowl-theme "shaman"
-```
-
-### Note on macOS (bash 3.2)
-
-On macOS, tmux plugins often run under Bash 3.2 (the system default). Bash 3.2 does not support associative arrays, so theme palettes are implemented using plain variables.
-
-## Creating a new theme
-
-To add your own theme, create a new file under:
-
-- `scripts/themes/<theme-name>.sh`
-
-Then select it in your `.tmux.conf`:
-
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-theme "<theme-name>"
-```
-
-### Theme file format (bash 3.2 compatible)
-
-A theme file is a simple list of `NO_*` variables containing hex colors (e.g. `#rrggbb`). Hyphens in keys become underscores in variable names.
-
-Supported keys:
-
-**Base**
-- `bg` → `NO_bg`
-- `fg` → `NO_fg`
-- `surface` → `NO_surface`
-
-**Borders**
-- `border` → `NO_border`
-- `border-active` → `NO_border_active`
-
-**Accents**
-- `accent-blue` → `NO_accent_blue`
-- `accent-cyan` → `NO_accent_cyan`
-- `accent-cyan-bright` → `NO_accent_cyan_bright`
-- `accent-green` → `NO_accent_green`
-- `accent-pink` → `NO_accent_pink`
-- `accent-orange` → `NO_accent_orange`
-- `accent-orange-bright` → `NO_accent_orange_bright`
-- `accent-yellow` → `NO_accent_yellow`
-- `accent-yellow-bright` → `NO_accent_yellow_bright`
-- `accent-red` → `NO_accent_red`
-
-Example theme file:
-
-```/dev/null/shaman-example.sh#L1-25
-#!/usr/bin/env bash
-
-# Base
-NO_bg="#001011"
-NO_fg="#53FBDA"
-NO_surface="#071411"
-
-# Borders
-NO_border="#2B3A30"
-NO_border_active="#53FBDA"
-
-# Accents
-NO_accent_blue="#869A86"
-NO_accent_cyan="#19655D"
-NO_accent_cyan_bright="#90FDD5"
-NO_accent_green="#2CA940"
-NO_accent_pink="#53FBDA"
-NO_accent_orange="#9D5900"
-NO_accent_orange_bright="#9D5900"
-NO_accent_yellow="#90FDD5"
-NO_accent_yellow_bright="#90FDD5"
-NO_accent_red="#B2322D"
-```
-
-### Extending a theme (recommended approach)
-
-If you want to “base” your theme on an existing one:
-
-1. Copy an existing theme file (e.g. `scripts/themes/nightowl.sh`) to a new name.
-2. Change only the variables you care about.
-3. Keep any variables you don’t change so upgrades don’t surprise you.
-
-If you prefer not to maintain a full theme file, you can also pick any theme and override a few colors in `.tmux.conf` using `@nightowl-color-*` (see “Color overrides”).
-
-## Color overrides
-
-You can override any theme color (including the main status bar background) by setting `@nightowl-color-<key>` in your `.tmux.conf`.
-
-Overrides are applied on top of the selected theme:
-
-```/dev/null/tmux.conf#L1-4
-set -g @nightowl-theme "shaman"
-set -g @nightowl-color-bg "#001011"
-set -g @nightowl-color-border-active "#53FBDA"
-```
-
-### Resetting sticky overrides
-
-tmux `set -g` options persist in the tmux server even if you later remove the line from `.tmux.conf`. If you’ve experimented with `@nightowl-color-*` overrides and want to return to the theme defaults, you can do a one-shot reset:
-
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-reset-overrides true
-```
-
-On the next theme load, the plugin will clear all `@nightowl-color-*` options and automatically set `@nightowl-reset-overrides` back to `false`.
-
-### Recommended (user-friendly) keys
-
-These keys are intended to be self-explanatory and stable:
-
-```/dev/null/tmux.conf#L1-20
-# main/status bar background + primary text
-set -g @nightowl-color-bg "#0b2942"
-set -g @nightowl-color-fg "#ffffff"
-
-# darker “surface” used for some segments
-set -g @nightowl-color-surface "#01111d"
-
-# borders
-set -g @nightowl-color-border "#5f7e97"
-set -g @nightowl-color-border-active "#64B5F6"
-
-# accents
-set -g @nightowl-color-accent-blue "#82aaff"
-set -g @nightowl-color-accent-cyan "#21c7a8"
-set -g @nightowl-color-accent-green "#22da6e"
-set -g @nightowl-color-accent-pink "#c792ea"
-set -g @nightowl-color-accent-orange "#df5f00"
-set -g @nightowl-color-accent-yellow "#addb67"
-set -g @nightowl-color-accent-red "#ef5350"
-
-# brighter accents (used for CPU/GPU, etc)
-set -g @nightowl-color-accent-yellow-bright "#ffeb95"
-set -g @nightowl-color-accent-orange-bright "#f78c6c"
-set -g @nightowl-color-accent-cyan-bright "#7fdbca"
-```
-
-## Configuration
-
-Customize the status bar by adding any of these lines to your `.tmux.conf` as desired:
-
-### Weather location override (proxy/VPN friendly)
-
-By default, weather uses IP-based geolocation via `ipinfo.io` to discover your location. If you use a SOCKS proxy/VPN, this can be wrong.
-
-You can force the weather location by setting:
-
-- `@nightowl-weather-zip` (US ZIP code used for the NOAA lookup)
-- `@nightowl-weather-country` (defaults to the detected country; set to `"US"` to enable NOAA output)
+- `~/.config/starship/` (directory with theme files)
+- `~/.config/starship.toml` → symlink to one of the theme files
 
 Example:
 
-```/dev/null/tmux.conf#L1-2
-set -g @nightowl-weather-zip "10001"
-set -g @nightowl-weather-country "US"
+```/dev/null/starship-symlink.sh#L1-12
+mkdir -p ~/.config/starship
+ln -sfn ~/.config/starship/starship-nightowl.toml ~/.config/starship.toml
 ```
 
-Disable battery functionality:
+### Switching themes
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-battery false
+Repoint the symlink:
+
+```/dev/null/starship-switch.sh#L1-12
+ln -sfn ~/.config/starship/starship-catpuccin.toml ~/.config/starship.toml
+# or:
+ln -sfn ~/.config/starship/starship-pastel.toml ~/.config/starship.toml
 ```
 
-Disable network functionality:
+### How this repo fits in
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-network false
+This repo should:
+
+- Track the theme files under `config/starship/` (or similar) and link them into `~/.config/starship/`
+- Optionally link a default theme to `~/.config/starship.toml`
+
+If you want the repo to manage the symlink automatically, add that logic to `scripts/link_configs.sh` (recommended), so a fresh machine gets a working prompt immediately.
+
+- `apt/ubuntu-packages.txt` → apt packages to install
+- `scripts/ubuntu_bootstrap.sh` → installs packages + tools (tmux TPM, starship, zoxide, neovim, etc.)
+- `scripts/link_configs.sh` → backs up existing configs and symlinks repo configs into place
+- `install.sh` → runs bootstrap + linking in the correct sequence
+
+---
+
+## Notes (terminal-first, git-friendly)
+
+Goal:
+- Take notes entirely in the terminal (no desktop note apps)
+- Sync notes between machines (rsync/scp)
+- Export to Markdown for publishing/sharing via GitHub repos (images + Mermaid)
+
+### Authoring format: Org (Neovim orgmode)
+
+Author notes as `.org` files for the richest terminal UX (agenda/capture/tasks):
+
+Suggested layout:
+- `~/notes/org/`   (authoring / source-of-truth)
+- `~/notes/md/`    (exported Markdown for GitHub)
+
+### Export Org → Markdown (faithful GitHub output)
+
+Recommended exporter: `pandoc`
+
+Single file:
+```/dev/null/notes-export-single.sh#L1-3
+pandoc -f org -t gfm -o out.md in.org
 ```
 
-Disable weather functionality:
-
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-weather false
+Export a whole tree (mirrors directory structure):
+```/dev/null/notes-export-tree.sh#L1-12
+mkdir -p ~/notes/md
+find ~/notes/org -name '*.org' -print0 \
+  | xargs -0 -I{} sh -lc '
+      in="{}"
+      out="$HOME/notes/md/${in#$HOME/notes/org/}"
+      out="${out%.org}.md"
+      mkdir -p "$(dirname "$out")"
+      pandoc -f org -t gfm -o "$out" "$in"
+    '
 ```
 
-Set cache duration to 30 minutes (1800 seconds):
-
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-weather-cache-duration 1800
+Notes:
+- Images: store assets alongside notes (e.g. `~/notes/org/assets/...`) and use relative links in Org/Markdown so they work in GitHub.
+- Mermaid (GitHub): use fenced blocks in the exported Markdown:
+```/dev/null/mermaid-example.md#L1-4
+~~~mermaid
+graph TD
+  A --> B
+~~~
 ```
 
-Switch from default fahrenheit to celsius:
+### Sync notes to a remote machine
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-fahrenheit false
+Rsync Org notes (local → remote):
+```/dev/null/notes-rsync-org.sh#L1-3
+rsync -av --delete ~/notes/org/ user@host:~/notes/org/
 ```
 
-Enable powerline symbols:
-
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-powerline true
+(Optional) also sync exported Markdown:
+```/dev/null/notes-rsync-md.sh#L1-3
+rsync -av --delete ~/notes/md/ user@host:~/notes/md/
 ```
 
-Switch left powerline symbol (can set any symbol you like as separator):
+### Quick dump (scp)
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-left-sep n8
+Copy a file quickly:
+```/dev/null/notes-scp.sh#L1-3
+scp ~/notes/org/inbox.org user@host:~/notes/org/inbox.org
 ```
 
-Switch right powerline symbol (can set any symbol you like as separator):
+---
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-right-sep n
+## Before you run anything
+
+### 1) Secrets are not committed
+Your real environment variables and secrets should live at:
+
+- `~/.config/secrets/env.zsh`
+
+That file is expected to be **untracked** and is sourced by `~/.zshrc` if present.
+
+Create it on the new machine:
+
+```/dev/null/commands.sh#L1-10
+mkdir -p ~/.config/secrets
+$EDITOR ~/.config/secrets/env.zsh
 ```
 
-Enable military time:
+Example content:
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-military-time true
+```/dev/null/env.zsh#L1-20
+# Example only — put real values here, do not commit.
+export GITHUB_PAT="..."
+export DD_API_KEY="..."
 ```
 
-Disable timezone:
+---
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-timezone false
+## Ubuntu setup (fresh machine)
+
+### 0) Get git (if needed)
+```/dev/null/commands.sh#L1-5
+sudo apt-get update
+sudo apt-get install -y git
 ```
 
-Disable the entire datetime segment (date/time/timezone):
+### 1) Clone the repo
+Pick a location (recommended: `~/.config/dotfiles`):
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-datetime false
+```/dev/null/commands.sh#L1-10
+# Root-based install (as root user)
+git clone https://github.com/<you>/<repo>.git /root/dotfiles
+cd /root/dotfiles
 ```
 
-Hide the date (and weekday) so the segment shows only the time (timezone remains configurable via `@nightowl-show-timezone`):
+### 2) Run the installer
+This performs, in order:
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-date false
+1. installs apt packages (from `apt/ubuntu-packages.txt`)
+2. installs/sets up `tpm` for tmux
+3. installs `starship` and `zoxide` (if missing)
+4. installs a recent `nvim` (if missing)
+5. backs up existing configs
+6. symlinks the repo configs into place
+
+Run:
+
+```/dev/null/commands.sh#L1-5
+chmod +x install.sh scripts/*.sh
+./install.sh
 ```
 
-Switch the left icon (it can accept session, smiley, window, or any character):
+### 3) Make `zsh` your default shell (if not already)
+The bootstrap script attempts to set this, but you may need to log out/in.
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-show-left-icon session
+Verify:
+
+```/dev/null/commands.sh#L1-5
+echo "$SHELL"
+zsh --version
 ```
 
-Enable high contrast pane border:
+If needed:
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-border-contrast true
+```/dev/null/commands.sh#L1-5
+chsh -s "$(command -v zsh)"
 ```
 
-Enable cpu usage:
+Log out and back in.
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-cpu-usage true
+---
+
+## Post-install steps (important)
+
+### tmux plugins (TPM)
+Start tmux:
+
+```/dev/null/commands.sh#L1-5
+tmux
 ```
 
-Enable ram usage:
+Then install plugins:
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-ram-usage true
+- Press `prefix` + `I`
+
+In your tmux config, `prefix` is `Ctrl+s`.
+
+So: `Ctrl+s` then `Shift+i`
+
+### Neovim plugins (lazy.nvim)
+Launch Neovim:
+
+```/dev/null/commands.sh#L1-5
+nvim
 ```
 
-Enable gpu usage:
+On first run:
 
-```/dev/null/tmux.conf#L1-1
-set -g @nightowl-gpu-usage true
+- `lazy.nvim` is bootstrapped automatically (git clone)
+- plugins are installed automatically
+
+If you want to review status:
+
+- `:Lazy`
+- `:Mason` (for LSP/tools)
+
+---
+
+## What gets backed up and where
+
+When you run `scripts/link_configs.sh`, existing files are moved to something like:
+
+- `~/.dotfiles-backup/YYYYmmdd-HHMMSS/...`
+
+Typical backups include:
+
+- `~/.zshrc`
+- `~/.tmux.conf`
+- `~/.config/nvim/init.lua`
+
+---
+
+## Common tasks
+
+### Re-link configs after pulling updates
+```/dev/null/commands.sh#L1-10
+cd ~/.config/dotfiles
+git pull
+./scripts/link_configs.sh
 ```
 
-## Features
+### Reload tmux config
+Inside tmux:
 
-* Support for powerline
-* Day, date, time, timezone (configurable)
-* Current location based on network with temperature and forecast icon (if available)
-* Network connection status and SSID
-* Battery percentage and AC power connection status
-* CPU usage
-* RAM usage
-* GPU usage
-* Color code based on if prefix is active or not
-* List of windows with current window highlighted
-* When prefix is enabled smiley face turns from green to yellow
-* When charging, 'AC' is displayed
-* If forecast information is available, a ☀, ☁, ☂, or ❄ unicode character corresponding with the forecast is displayed alongside the temperature
+- `prefix` + `r`
 
-## Compatibility
+With your prefix: `Ctrl+s` then `r`
 
-Compatible with macOS and Linux. Tested on tmux 3.0a
+### Update tmux plugins
+Inside tmux:
 
-## Contributors
+- `prefix` + `U` (update plugins)
+- `prefix` + `I` (install plugins)
 
-This theme is maintained by the following person: [Kyle Peeler](https://github.com/kylepeeler)
+### Update Neovim plugins
+In Neovim:
 
-[](https://github.com/kylepeeler) |
---- |
-[Kyle Peeler](https://kylepeeler.codes) |
+- `:Lazy sync`
 
-## License
+---
 
-[MIT License](./LICENSE)
+## Notes / assumptions
+
+- This repo targets Ubuntu Linux. Some macOS-specific lines are kept commented out in config files for reference.
+- Neovim is installed via a “recent build” approach (not Ubuntu’s often-outdated `apt` package). See `scripts/ubuntu_bootstrap.sh`.
+- Some tools in your Neovim config (formatters/linters) may be installed via `mason` inside Neovim; system-level toolchains (Go/Rust) are still your responsibility if you want `gofmt`/`rustfmt` available globally.
+
+---
+
+## Troubleshooting
+
+### `fd` command not found on Ubuntu
+Ubuntu installs `fd` as `fdfind`. The bootstrap script attempts to create a shim at:
+
+- `~/.local/bin/fd` → pointing to `fdfind`
+
+Ensure `~/.local/bin` is on your `PATH` (this repo’s `zshrc` adds it).
+
+### zsh-syntax-highlighting not loading
+Ubuntu package locations vary. This repo tries:
+
+- `/usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh`
+
+If your distro uses a different path, install the package and update `config/zsh/zshrc` accordingly.
+
+---
